@@ -1,0 +1,12 @@
+fastapi~=0.116.1
+pydantic~=2.11.9
+starlette~=0.47.3
+sqlmodel~=0.0.24
+sqlalchemy~=2.0.43
+pydantic_core
+alembic~=1.16.5
+langchain_openai
+langchain_community
+langchain
+dashscope
+unstructured~=0.18.15
