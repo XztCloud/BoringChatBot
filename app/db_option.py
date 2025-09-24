@@ -48,6 +48,15 @@ def get_file_by_name(session: SessionDep, filename: str) -> File | None:
     return session_file
 
 
+def get_all_files(session: SessionDep) -> List[str]:
+    statement = select(File)
+    session_files = session.exec(statement).all()
+    file_name_list = []
+    for session_file in session_files:
+        file_name_list.append(os.path.basename(session_file.filename))
+    return file_name_list
+
+
 def save_doc_chunk(doc_id_list: List[str], parent_doc_id: int) -> None:
     with Session(engine) as session:
         for doc_id in doc_id_list:

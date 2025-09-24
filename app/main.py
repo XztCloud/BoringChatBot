@@ -12,4 +12,9 @@ app.add_middleware(
     CORSMiddleware,
 )
 
-app.include_router(api_router, prefix="/api/v1", tags=["api"])
+app.include_router(api_router, prefix="/api/v1")
+
+
+# @app.on_event("startup")
+# async def startup_event():
+#     test_base_model()

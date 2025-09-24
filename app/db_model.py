@@ -1,8 +1,14 @@
 from datetime import datetime
+from enum import Enum
 from typing import Optional, List
 
 from sqlalchemy import func
 from sqlmodel import SQLModel, Field, Relationship
+
+
+class FileStatus(Enum):
+    LOADING = "LOADING"
+    COMPLETE = "COMPLETE"
 
 
 class FileBase(SQLModel):
@@ -19,6 +25,7 @@ class File(FileBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True, index=True)
     file_hash: str = Field(nullable=False, unique=True, index=True, max_length=64)
     create_at: datetime = Field(default=None, sa_column_kwargs={"server_default": func.now()})
+    status: str = Field(nullable=False, default=FileStatus.LOADING.value, max_length=16)
 
     # 关系字段：一对多关系，一个 Document 对应多个 chunks
     chunks: List["DocumentChunk"] = Relationship(back_populates="file", cascade_delete=True)

@@ -3,11 +3,10 @@ import os
 
 from app.api.deps import SessionDep
 from fastapi import UploadFile, APIRouter, File
-from pydantic import BaseModel
-
 from app.db_model import FileCreate
 from app.retriever.load_file_thread import load_file_thread, ParentDocumentInfo
-from app.retriever.save_file_info import save_data, get_file_by_hash, get_file_by_name
+from app.db_option import save_data, get_file_by_hash, get_file_by_name
+from app.utils.user_base_model import BaseResponse
 
 router = APIRouter(prefix="/files", tags=["files"])
 
@@ -17,12 +16,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 MAX_PROCESSING_FILE_COUNT = 3
 
 
-class FileResponse(BaseModel):
-    code: str
-    msg: str = ""
-
-
-@router.post("/upload", response_model=FileResponse)
+@router.post("/upload", response_model=BaseResponse)
 async def upload(session: SessionDep, file: UploadFile = File(...)):
     """
     上传文档到数据库，用作资料库
@@ -30,7 +24,7 @@ async def upload(session: SessionDep, file: UploadFile = File(...)):
     :param file:
     :return:
     """
-    response_model = FileResponse(code="000000", msg="success")
+    response_model = BaseResponse(code="000000", msg="success")
     if load_file_thread.file_path_queue.qsize() > MAX_PROCESSING_FILE_COUNT:
         response_model.code = "000003"
         response_model.msg = "system is busy."
@@ -69,7 +63,7 @@ async def upload(session: SessionDep, file: UploadFile = File(...)):
     return response_model
 
 
-@router.delete("/{file_name}", response_model=FileResponse)
+@router.delete("/{file_name}", response_model=BaseResponse)
 async def delete_file(session: SessionDep, file_name: str):
     """
     删除指定文件
@@ -78,7 +72,7 @@ async def delete_file(session: SessionDep, file_name: str):
     :return:
     """
     file_path = os.path.join(UPLOAD_DIR, file_name)
-    response_model = FileResponse(code="000000", msg="success")
+    response_model = BaseResponse(code="000000", msg="success")
 
     if not os.path.exists(file_path):
         response_model.code = '000001'
@@ -114,5 +108,5 @@ async def delete_file(session: SessionDep, file_name: str):
         session.delete(current_file)
         session.commit()
 
-        load_file_thread.test_check_embeddings_with_id()
+        # load_file_thread.test_check_embeddings_with_id()
     return response_model

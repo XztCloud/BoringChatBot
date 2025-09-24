@@ -11,10 +11,9 @@ from concurrent.futures import ThreadPoolExecutor
 
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from sqlmodel import Session
 from unstructured.partition.pdf import partition_pdf
-
-from app.retriever.save_file_info import save_doc_chunk
+from app.db_option import save_doc_chunk
+from app.utils.user_base_model import RagConfig
 
 PDF_PIC_DIR = 'pdf_pic'
 CHROMADB_COLLECTION = 'rag_documents_collection'
@@ -52,7 +51,7 @@ class LoadFileThread:
             persist_directory=CHROMADB_DIR
         )
         # 检索器。只要数据库对象没变，Retriever 不需要重新生成；改k值时、更新数据库实例、embedding模型时，需要重新生成
-        self.retriever = self.vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 5})
+        self.retriever = self.vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 3})
 
         self.split_way = "default"  # 切分文档方案
         self.stop_event = threading.Event()
@@ -64,6 +63,21 @@ class LoadFileThread:
         )
         self.consume_thread.start()
         self.doc_ids = []
+        self.rag_config = RagConfig()
+
+    def load(self):
+        self.rag_config = RagConfig()
+
+    def update_rag_config(self, rag_config: RagConfig):
+        differences = {}
+        src_rag_config = self.rag_config.dict()
+        new_rag_config = rag_config.dict()
+        all_fields = set(src_rag_config.keys()).union(set(new_rag_config.keys()))
+        for _field in all_fields:
+            src_value = src_rag_config.get(_field, "MISSING")
+            new_value = new_rag_config.get(_field, "MISSING")
+            if src_value != new_value:
+                differences[_field] = new_value
 
     # 消费者线程函数：不断从队列取任务，提交给线程池
     def task_consumer(self, task_queue: queue.Queue, executor: ThreadPoolExecutor, stop_event: threading.Event):
@@ -116,6 +130,7 @@ class LoadFileThread:
                 )
             except Exception as e:
                 print(f'load pdf failed, reason: {e}')
+                raise f'load pdf failed, reason: {e}'
             print("2")
             split_docs = []
             counter = 0
@@ -141,8 +156,8 @@ class LoadFileThread:
             doc_ids = self.vectorstore.add_documents(documents=split_docs)
             print(f"Successfully added {len(doc_ids)} documents from {document_info.file_path}")
             save_doc_chunk(doc_ids, document_info.file_id)
-            self.doc_ids = doc_ids
-            self.test_check_embeddings_with_id()
+            # self.doc_ids = doc_ids
+            # self.test_check_embeddings_with_id()
             print(f"save_doc_chunk end, doc_ids: {doc_ids}")
         except Exception as e:
             print(f"Error adding documents from {document_info.file_path}: {e}")

@@ -1,6 +1,8 @@
+import json
 import os
 import queue
 import threading
+from dataclasses import field, dataclass
 
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
@@ -10,9 +12,15 @@ from langchain_openai import ChatOpenAI
 from app.retriever.load_file_thread import load_file_thread
 
 
+@dataclass
+class StreamQuestion:
+    question: str = field(metadata={"description": "问题"})
+    answer_queue: queue.Queue = field(metadata={"description": "答案队列"})
+
+
 class QueryAnswers:
     def __init__(self):
-        self.question_queue = queue.Queue()
+        self.stream_question_queue = queue.Queue()
         # 大模型
         self.llm = ChatOpenAI(
             api_key=os.getenv("DASHSCOPE_API_KEY"),
@@ -32,22 +40,13 @@ class QueryAnswers:
         self.parse_output = StrOutputParser()
         self.native_rag_chain = self.retrieve | self.prompt | self.llm | self.parse_output
 
-        self.stop_event = threading.Event()
-        self.answer_thread = threading.Thread(target=self.query_thread)
-        self.answer_thread.start()
-
-    def query_thread(self):
-        while not self.stop_event.is_set():
-            question = self.question_queue.get()
-            self.native_rag_chain.invoke(question)
-
     async def query(self, question: str) -> str:
         result = await self.native_rag_chain.ainvoke(question)
         return result
 
-    def stop(self):
-        self.stop_event.set()
-        self.answer_thread.join()
+    async def event_generator(self, question: str):
+        async for answer in self.native_rag_chain.astream(question):
+            yield f"data: {json.dumps({'data': answer}, ensure_ascii=False)}\n\n"
 
 
 query_answers = QueryAnswers()
