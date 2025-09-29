@@ -10,8 +10,8 @@ router = APIRouter(prefix="/configure", tags=["configure"])
 global_user_config_dict = {SUPPER_USER_ID: TaskConfig()}
 
 
-@router.post("/send_config", response_model=BaseResponse)
-def send_config(session: SessionDep, device_id: str, config: TaskConfig):
+@router.post("/update_config", response_model=BaseResponse)
+async def send_config(session: SessionDep, device_id: str, config: TaskConfig):
     """
     发送配置信息
     :param session:

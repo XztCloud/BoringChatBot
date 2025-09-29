@@ -1,5 +1,5 @@
+from abc import ABC, abstractmethod
 from typing import Any, Optional
-
 from pydantic import BaseModel, Field
 
 
@@ -15,10 +15,18 @@ class InfoResponse(BaseResponse):
 class LLmConfig(BaseModel):
     llm_name: str = Field(default="qwen-plus", description="大模型")
     temperature: float = Field(default=0.0, description="温度")
+    summary_llm_name: Optional[str] = Field(default=None, description="用于总结大模型")
+    summary_temperature: float = Field(default=0.0, description="温度")
 
 
-class RagConfig(BaseModel):
+class EmbeddingsConfig(BaseModel):
+    model_name: str = Field(default="text-embedding-v2", description="嵌入模型名称")
+    vector_dimensions: Optional[int] = Field(default=None, description="向量维度")
+
+
+class RetrieverConfig(BaseModel):
     split_len: int = Field(default=1000, description="文本分段长度")
+    over_lap: int = Field(default=200, description="文本重叠长度")
     split_way: str = Field(default="Recursive", description="文本分段方式")
     top_k: int = Field(default=3, description="检索 top k")
 
@@ -36,6 +44,17 @@ class HistoryConfig(BaseModel):
 
 class TaskConfig(BaseModel):
     llm_config: LLmConfig = Field(default=LLmConfig(), description="大模型配置")
+    embeddings_config: EmbeddingsConfig = Field(default=EmbeddingsConfig(), description="嵌入模型信息")
     multi_retriever_config: Optional[MultiRetrieverConfig] = Field(default=None, description="多检索器配置")
     history_config: Optional[HistoryConfig] = Field(default=None, description="对话历史配置")
-    rag_config: RagConfig = Field(default=RagConfig(), description="rag配置")
+    retriever_config: RetrieverConfig = Field(default=RetrieverConfig(), description="检索器配置")
+
+
+class BaseManager(ABC):
+    @abstractmethod
+    def load(self):
+        pass
+
+    @abstractmethod
+    def update_task_config(self, task_config: TaskConfig):
+        pass
