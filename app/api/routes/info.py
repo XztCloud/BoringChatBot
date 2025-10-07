@@ -2,7 +2,7 @@ import time
 
 from app.api.deps import SessionDep
 from fastapi import APIRouter
-from app.db_option import get_all_files
+# from app.db_option import get_all_files
 from app.utils.user_base_model import InfoResponse, BaseResponse
 
 router = APIRouter(prefix="/info", tags=["info"])
@@ -10,21 +10,21 @@ SUPPER_USER_ID = "admin"
 global_save_device_dict = {}
 
 
-@router.get("/documents", response_model=InfoResponse)
-def get_documents(session: SessionDep):
-    """
-    获取所有文档信息
-    :param session:
-    :return: InfoResponse
-    """
-    info_response = InfoResponse(code="000000", msg="success")
-    try:
-        file_list = get_all_files(session)
-        info_response.extra_msg = file_list
-    except Exception as e:
-        info_response.code = "000001"
-        info_response.msg = f"error: {e}"
-    return info_response
+# @router.get("/documents", response_model=InfoResponse)
+# def get_documents(session: SessionDep):
+#     """
+#     获取所有文档信息
+#     :param session:
+#     :return: InfoResponse
+#     """
+#     info_response = InfoResponse(code="000000", msg="success")
+#     try:
+#         file_list = get_all_files(session)
+#         info_response.extra_msg = file_list
+#     except Exception as e:
+#         info_response.code = "000001"
+#         info_response.msg = f"error: {e}"
+#     return info_response
 
 
 @router.get("/heartbeat", response_model=BaseResponse)

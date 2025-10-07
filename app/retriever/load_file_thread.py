@@ -17,7 +17,6 @@ from langchain_core.stores import InMemoryStore
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from unstructured.partition.pdf import partition_pdf
 from app.db_option import save_doc_chunk
-from app.retriever.llm_manager import llm_manager
 from app.utils.user_base_model import TaskConfig, BaseManager, EmbeddingsConfig, RetrieverConfig, MultiRetrieverConfig
 from app.utils.utils_tools import diff_models
 
@@ -45,17 +44,17 @@ def get_summary_chunks(ori_doc_chunks: list[Document]) -> list[str]:
     :param ori_doc_chunks:
     :return:
     """
-    print(f'get_summary: {len(ori_doc_chunks)}')
-    summary_model = llm_manager.summary_model
-    prompt_text = """You are an assistant tasked with summarizing tables and text.              
-    Give a concise summary of the table or text. Table or text chunk: {element} """
-    prompt = ChatPromptTemplate.from_template(prompt_text)
-    summary_chain = {"element": lambda x: x} | prompt | summary_model | StrOutputParser()
-    ori_text_chunks = [doc.page_content for doc in ori_doc_chunks]
-    summary_chunks = summary_chain.batch(ori_text_chunks, {"max_concurrency": 5})
-    if len(summary_chunks) > 0:
-        print(f'get summary chunks: {summary_chunks[0]}')
-    return summary_chunks
+    # print(f'get_summary: {len(ori_doc_chunks)}')
+    # summary_model = llm_manager.summary_model
+    # prompt_text = """You are an assistant tasked with summarizing tables and text.
+    # Give a concise summary of the table or text. Table or text chunk: {element} """
+    # prompt = ChatPromptTemplate.from_template(prompt_text)
+    # summary_chain = {"element": lambda x: x} | prompt | summary_model | StrOutputParser()
+    # ori_text_chunks = [doc.page_content for doc in ori_doc_chunks]
+    # summary_chunks = summary_chain.batch(ori_text_chunks, {"max_concurrency": 5})
+    # if len(summary_chunks) > 0:
+    #     print(f'get summary chunks: {summary_chunks[0]}')
+    # return summary_chunks
 
 
 class LoadFileThread(BaseManager):
@@ -158,6 +157,7 @@ class LoadFileThread(BaseManager):
                     embedding_function=self.embeddings,
                     persist_directory=CHROMADB_DIR
                 )
+                print(f'update retriever: {self.vectorstore}')
                 self.retriever = self.vectorstore.as_retriever(
                     search_type="similarity",
                     search_kwargs={"k": retriever_config.top_k}
